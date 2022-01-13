@@ -1,0 +1,16 @@
+[package]
+name = "ate-chip"
+version = "0.1.0"
+edition = "2021"
+authors = ["Rowan Sakrejda-Leavitt <rowan@fawkes.io>"]
+publish = false
+description = """
+A possibly functional chip-8 emulator
+"""
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# thiserror = "1.0.30"
+owo-colors = "3"
+
