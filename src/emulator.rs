@@ -1,18 +1,18 @@
 use owo_colors::OwoColorize;
+use sdl2::render::Texture;
 
 const PIXEL: &str = "██";
 
-#[derive(Debug)]
-pub struct ACScreen {
+pub struct ACEmulator {
     pixels: [[bool; 64]; 32],
     //for caching the last render
     last_pixels: Option<[[bool; 64]; 32]>,
     last_render: Option<String>,
 }
 
-impl ACScreen {
-    /// Creates a new ACScreen with all pixels set to black
-    pub const fn new() -> Self {
+impl ACEmulator {
+    /// Creates a new ACEmulator with all pixels set to black
+    pub fn new() -> Self {
         Self {
             pixels: [[false; 64]; 32],
             last_pixels: None,
@@ -38,11 +38,27 @@ impl ACScreen {
         !self.pixels[y as usize][x as usize]//return if the value at xy was erased
     }
 
+    pub fn set_pixel(&mut self, mut x: i8, mut y: i8, v: bool) {
+        if x >= 64 {
+            x -= 64;
+        } else if x < 0 {
+            x += 64;
+        }
+
+        if y > 32 {
+            y -= 32;
+        } else if y < 0 {
+            y += 32;
+        }
+
+        self.pixels[y as usize][x as usize] = v;
+    }
+
     pub fn clear(&mut self) {
         self.pixels = [[false; 64]; 32]
     }
 
-    pub fn render(&mut self) -> String {
+    pub fn render_string(&mut self) -> String {
         // caching yay
         if let Some(last_pixels) = &self.last_pixels {
             if *last_pixels == self.pixels {
@@ -77,5 +93,25 @@ impl ACScreen {
         self.last_render = Some(rendered.clone());
 
         rendered
+    }
+
+    pub fn render_to_tex(&mut self, texture: &mut Texture) {
+        texture.with_lock(None, |buffer: &mut [u8], _pitch/* size of a row in bytes */: usize| {
+            let mut buf_ptr = 0;
+            for row in self.pixels.iter().rev() {
+                for px in row {
+                    if *px {
+                        buffer[buf_ptr] = 255;
+                        buffer[buf_ptr+1] = 255;
+                        buffer[buf_ptr+2] = 255;
+                    } else {
+                        buffer[buf_ptr] = 0;
+                        buffer[buf_ptr+1] = 0;
+                        buffer[buf_ptr+2] = 0;
+                    }
+                    buf_ptr += 3
+                }
+            }
+        }).expect("Rendered the current frame");
     }
 }
