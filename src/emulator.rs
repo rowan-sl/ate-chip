@@ -1,6 +1,6 @@
 use owo_colors::OwoColorize;
 use sdl2::render::Texture;
-use std::time::{Instant, Duration};
+use std::time::Instant;
 use crate::keyboard::ACKey;
 
 const PIXEL: &str = "██";
@@ -64,6 +64,7 @@ impl ACRenderer {
         !self.pixels[y as usize][x as usize]//return if the value at xy was erased
     }
 
+    #[allow(dead_code)]
     pub fn set_pixel(&mut self, mut x: i8, mut y: i8, v: bool) {
         if x >= 64 {
             x -= 64;
@@ -84,6 +85,7 @@ impl ACRenderer {
         self.pixels = [[false; 64]; 32]
     }
 
+    #[allow(dead_code)]
     pub fn render_string(&mut self) -> String {
         // caching yay
         if let Some(last_pixels) = &self.last_pixels {

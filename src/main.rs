@@ -13,9 +13,7 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::{Color, PixelFormatEnum};
 
-use log::{debug, info, trace};
-
-use rand::{self, RngCore};
+use log::trace;
 
 use clap::Parser;
 
