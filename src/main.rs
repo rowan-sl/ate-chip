@@ -13,6 +13,8 @@ use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::{Color, PixelFormatEnum};
 
+use log::{debug, info, trace};
+
 use rand::{self, RngCore};
 
 use clap::Parser;
@@ -33,7 +35,7 @@ const ABOUT: &str = clap::crate_description!();
 
 const SETTINGS: ACSettings = ACSettings {
     fx1e_affects_vf: false,
-    target_fps: 60,
+    target_fps: 200,
     audio: AudioSpecDesired {
         freq: Some(44100),
         channels: Some(1), // mono
@@ -90,6 +92,8 @@ struct Args {
 pub fn main() -> Result<(), ACEmError> {
     let args = Args::parse();
 
+    env_logger::builder().filter_level(log::LevelFilter::Info).init();
+
     let mut rom = Vec::new();
     fs::OpenOptions::new()
         .read(true)
@@ -138,71 +142,76 @@ pub fn main() -> Result<(), ACEmError> {
     let frame_duration = Duration::new(0, 1_000_000_000u32 / SETTINGS.target_fps as u32);
 
     let mut emulator = ACEmulator::new();
+    emulator.load_rom(rom);
 
     let mut event_pump = sdl_context.event_pump()?;
     let mut timestamp = Instant::now();
     let mut keyboard = ACKeyboard::new();
     'running: loop {
         canvas.clear();
+        trace!("frame");
+        let mut key_pressed: Option<ACKey> = None;
 
-        for event in event_pump.poll_iter() {
+        if let Some(event) = event_pump.poll_event() {
             match event {
                 Event::Quit {..} => {
                     break 'running
                 }
                 Event::KeyDown { keycode, .. } => {
                     if let Some(key) = keycode {
-                        match key {
+                        let key = match key {
                             Keycode::Num1 => {
-                                keyboard.press(ACKey::K1)
+                                ACKey::K1
                             }
                             Keycode::Num2 => {
-                                keyboard.press(ACKey::K2)
+                                ACKey::K2
                             }
                             Keycode::Num3 => {
-                                keyboard.press(ACKey::K3)
+                                ACKey::K3
                             }
                             Keycode::Num4 => {
-                                keyboard.press(ACKey::KC)
+                                ACKey::KC
                             }
                             Keycode::Q => {
-                                keyboard.press(ACKey::K4)
+                                ACKey::K4
                             }
                             Keycode::W => {
-                                keyboard.press(ACKey::K5)
+                                ACKey::K5
                             }
                             Keycode::E => {
-                                keyboard.press(ACKey::K6)
+                                ACKey::K6
                             }
                             Keycode::R => {
-                                keyboard.press(ACKey::KD)
+                                ACKey::KD
                             }
                             Keycode::A => {
-                                keyboard.press(ACKey::K7)
+                                ACKey::K7
                             }
                             Keycode::S => {
-                                keyboard.press(ACKey::K8)
+                                ACKey::K8
                             }
                             Keycode::D => {
-                                keyboard.press(ACKey::K9)
+                                ACKey::K9
                             }
                             Keycode::F => {
-                                keyboard.press(ACKey::KE)
+                                ACKey::KE
                             }
                             Keycode::Z => {
-                                keyboard.press(ACKey::KA)
+                                ACKey::KA
                             }
                             Keycode::X => {
-                                keyboard.press(ACKey::K0)
+                                ACKey::K0
                             }
                             Keycode::C => {
-                                keyboard.press(ACKey::KB)
+                                ACKey::KB
                             }
                             Keycode::V => {
-                                keyboard.press(ACKey::KF)
+                                ACKey::KF
                             }
-                            _ => {},
-                        }
+                            _ => {continue;}
+                        };
+                        keyboard.press(key.clone());
+                        key_pressed = Some(key);
                     }
                 },
                 Event::KeyUp { keycode, .. } => {
@@ -270,7 +279,13 @@ pub fn main() -> Result<(), ACEmError> {
         // } else {
         //     emulator.set_pixel(10, 10, false);
         // }
-        emulator.render_to_tex(&mut tex_display);
+        emulator.update(&keyboard, key_pressed);
+        emulator.renderer.render_to_tex(&mut tex_display);
+        if emulator.should_bleep() {
+            noise_player.resume();
+        } else {
+            noise_player.pause();
+        }
 
         canvas.clear();
         canvas.copy(&tex_display, None, None)?;
